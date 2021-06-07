@@ -12,7 +12,7 @@ import lombok.*;
 @Data
 @Entity
 @Table(name = "postnotifer", schema = "userdb")
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @RequiredArgsConstructor
 public class Post {
     @Id

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 public class KafkaConsumer {
     @KafkaListener(topics = "msg")
     public void msgListener(String msg) {
+        System.out.println("**************************************************************");
         System.out.println(msg);
     }
 }
