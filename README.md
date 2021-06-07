@@ -4,7 +4,7 @@
 #Инструкция по запуску:
 1. В файле application.properties можно изменить настройки бд и кафки.
   Настройки БД:
-```YML
+```properties
     spring.datasource.driver-class-name=org.postgresql.Driver
     spring.datasource.url=jdbc:postgresql://localhost:5432/test
     spring.datasource.name=rss_syncer
@@ -14,7 +14,7 @@
     spring.flyway.password=123
 ```
   Настройки kafka:
-```YML
+```properties
     spring.kafka.consumer.group-id=app.1
     spring.kafka.bootstrap-servers=localhost:9092
 ```
