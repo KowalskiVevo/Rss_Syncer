@@ -1,13 +1,9 @@
 package com.example.demo.controller;
 
-import org.apache.tomcat.jni.Time;
 import org.json.JSONObject;
 import org.json.XML;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
@@ -18,17 +14,11 @@ import java.net.URL;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import com.ctc.wstx.sw.XmlWriter;
 import com.example.demo.entity.Post;
 import com.example.demo.repository.PostRepos;
 import com.example.demo.service.KafkaProducer;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
-import com.rometools.rome.feed.synd.SyndFeedImpl;
 import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.SyndFeedOutput;
@@ -45,8 +35,11 @@ public class RssController {
     // Количество минут, через которое производится получение элементов ленты
     private final int N = 5;
 
+    /**
+     * Отправляет новые элементы ленты в брокер Kafka каждые N минут
+     */
     @GetMapping("/main")
-    public void rssReader(HttpServletRequest request, HttpServletResponse response)
+    public void rssReader()
             throws MalformedURLException, IOException, IllegalArgumentException, FeedException, InterruptedException {
         while (true) {
             System.out.println("[" + new Date().toString() + "] Веду поиск новых элементов ленты, Бип-Боп-Бип!");
@@ -66,7 +59,13 @@ public class RssController {
 
     }
 
-    // Метод, создающий новую xml с одним элементом
+    /**
+     * Метод, создающий новый интерфейс SyndFeed с одним элементом entry (С одним
+     * элементом item)
+     * 
+     * @param entry - SyndEntry, содержащий новую новостную страницу
+     * @return - SyndFeed, содержащий один @param entry
+     */
     private SyndFeed translateRssToSoloXml(SyndEntry entry)
             throws MalformedURLException, IOException, IllegalArgumentException, FeedException {
         XmlReader reader = new XmlReader(new URL(url));
@@ -77,25 +76,23 @@ public class RssController {
         feed.setDescription("Новая популярная публикация за 24 часа");
         feed.setPublishedDate(new Date());
         return feed;
-        // Вывод полученной XML на /main
-        // output.output(feed2, response.getWriter());
     }
 
-    // Отправка json в брокер
+    /**
+     * Метод, отправляющий json в брокер Kafka
+     * 
+     * @param entry - SyndEntry, содержащий новую новостную страниц
+     */
     private void sendJsonToKafka(SyndEntry entry)
             throws MalformedURLException, IllegalArgumentException, IOException, FeedException {
         SyndFeed feed = translateRssToSoloXml(entry);
         SyndFeedOutput output = new SyndFeedOutput();
+
         // Преобразование XML в Json
         String xMLString = output.outputString(feed);
-        // System.out.println(xMLString);
         JSONObject jsonObject = XML.toJSONObject(xMLString);
         String jsonPrettyPrintString = jsonObject.toString(4);
 
-        // System.out.println(jsonPrettyPrintString);
-        // System.out.println("****************************");
-
-        // Отправляем json в топик брокера кафка
         kafkaProducer.sendOrder(jsonPrettyPrintString);
     }
 
