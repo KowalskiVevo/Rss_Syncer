@@ -1,8 +1,11 @@
-package com.example.demo.controller;
+package com.example.demo.component;
 
 import org.json.JSONObject;
 import org.json.XML;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,7 +27,7 @@ import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.SyndFeedOutput;
 import com.rometools.rome.io.XmlReader;
 
-@RestController
+@Component
 @RequiredArgsConstructor(onConstructor_ = { @Autowired })
 public class RssController {
 
@@ -38,23 +41,20 @@ public class RssController {
     /**
      * Отправляет новые элементы ленты в брокер Kafka каждые N минут
      */
-    @GetMapping("/main")
+    @Scheduled(fixedRate = N * 1000 * 60)
     public void rssReader()
             throws MalformedURLException, IOException, IllegalArgumentException, FeedException, InterruptedException {
-        while (true) {
-            System.out.println("[" + new Date().toString() + "] Веду поиск новых элементов ленты, Бип-Боп-Бип!");
-            XmlReader reader = new XmlReader(new URL(url));
-            SyndFeed feed = new SyndFeedInput().build(reader);
-            for (SyndEntry entry : feed.getEntries()) {
-                if (postRepos.findAll().stream().filter(o -> o.getUrl().equals(entry.getUri())).findFirst()
-                        .isPresent() == false) {
-                    Post post = new Post();
-                    post.setUrl(entry.getUri().toString());
-                    postRepos.save(post);
-                    sendJsonToKafka(entry);
-                }
+        System.out.println("[" + new Date().toString() + "] Веду поиск новых элементов ленты, Бип-Боп-Бип!");
+        XmlReader reader = new XmlReader(new URL(url));
+        SyndFeed feed = new SyndFeedInput().build(reader);
+        for (SyndEntry entry : feed.getEntries()) {
+            if (postRepos.findAll().stream().filter(o -> o.getUrl().equals(entry.getUri())).findFirst()
+                    .isPresent() == false) {
+                Post post = new Post();
+                post.setUrl(entry.getUri().toString());
+                postRepos.save(post);
+                sendJsonToKafka(entry);
             }
-            TimeUnit.MINUTES.sleep(N);
         }
 
     }
